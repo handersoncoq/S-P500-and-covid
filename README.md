@@ -1,2 +1,2 @@
 # S-P500-and-covid
-Looking at the historical price of the stocks in S&amp;P 500 index and see how covid-19 has affected prices
+Looking at the historical movement of the S&P 500 index and visualizing covid-19's impact.
