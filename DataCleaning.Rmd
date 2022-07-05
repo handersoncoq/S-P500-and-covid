@@ -98,6 +98,15 @@ usCovid <- covidData %>%
 
 ```
 
+### Exporting data
+
+```{r}
+
+write.csv(GSPC, file="S_P500.csv", quote=F)
+
+write.csv(covidData, file="covid_19.csv", quote=F)
+
+```
 
 
 
