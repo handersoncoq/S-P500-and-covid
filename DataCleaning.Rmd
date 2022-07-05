@@ -1,0 +1,103 @@
+---
+title: "S&P 500 & Covid-19"
+author: "Handerson Coq"
+date: '2022-07-04'
+output: html_document
+---
+
+Cleaning S&P500 data from Yahoo and covid-19 data from Johns Hopkins.
+
+
+```{r packages}
+
+#install.packages("quantmod")
+library(quantmod)
+
+library(dplyr)
+library(tidyr)
+
+```
+
+### Get stock data
+
+```{r get data}
+
+getSymbols("^GSPC", src = "yahoo", from = Sys.Date()-(4*365), to = Sys.Date())
+
+```
+
+### Calcluate daily returns
+
+```{r adding returns}
+
+GSPC$GSPC.Return = diff(GSPC$GSPC.Adjusted)/Lag(GSPC$GSPC.Adjusted)
+
+```
+
+### Get covid data
+
+```{r}
+
+casesRaw <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+
+deathsRaw <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+
+recoveredRaw <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv")
+
+```
+
+### Data cleaning
+
+```{r cleaning}
+
+### from wide to long
+
+cases <- casesRaw %>%
+  gather(key="date", value="confirmed", -c(Country.Region, Province.State, Lat, Long)) %>% 
+  group_by(Country.Region, date) %>%
+  summarize(cases=sum(confirmed))
+
+deaths <- deathsRaw %>% 
+  gather(key="date", value="deaths", -c(Country.Region, Province.State, Lat, Long)) %>% 
+  group_by(Country.Region, date) %>% 
+  summarize(deaths=sum(deaths))
+
+recovered <- recoveredRaw %>% 
+  gather(key="date", value="recovered", -c(Country.Region, Province.State, Lat, Long)) %>% 
+  group_by(Country.Region, date) %>% summarize(recovered=sum(recovered))
+
+### Combining the data
+
+covidData <- full_join(cases, deaths) %>% 
+  full_join(recovered)
+
+### formating date
+
+covidData$date <- covidData$date %>% 
+  sub("X", "", .) %>% 
+  as.Date("%m.%d.%y")
+
+### Aggregating cases
+
+covidData <- covidData %>% 
+  group_by(Country.Region) %>% 
+  mutate(cumCases=cumsum(cases), days = date - first(date) + 1)
+
+### Data for the world
+
+worldCovid <- covidData %>% 
+  group_by(date) %>% 
+  summarize(cases=sum(cases), cumCases=sum(cumCases), deaths=sum(deaths), recovered=sum(recovered)) %>% 
+  arrange(date)
+
+### Data for the U.S.
+
+usCovid <- covidData %>% 
+  filter(Country.Region=="US") %>% 
+  arrange(date)
+
+```
+
+
+
+
