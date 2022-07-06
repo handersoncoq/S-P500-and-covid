@@ -18,19 +18,24 @@ library(tidyr)
 
 ```
 
+### Calcluate daily returns
+
+```{r adding returns}
+
+GSPC$GSPC.Return = diff(GSPC$GSPC.Adjusted)/Lag(GSPC$GSPC.Adjusted)
+
+```
+
+
 ### Get stock data
 
 ```{r get data}
 
 getSymbols("^GSPC", src = "yahoo", from = Sys.Date()-(4*365), to = Sys.Date())
 
-```
+### Add the data in a dataframe with dates for export
 
-### Calcluate daily returns
-
-```{r adding returns}
-
-GSPC$GSPC.Return = diff(GSPC$GSPC.Adjusted)/Lag(GSPC$GSPC.Adjusted)
+S_P500 <- data.frame(date = time(GSPC), open = GSPC$GSPC.Open, high = GSPC$GSPC.High, low = GSPC$GSPC.Low, close = GSPC$GSPC.Close, volume = GSPC$GSPC.Volume, adjusted = GSPC$GSPC.Adjusted, return = GSPC$GSPC.Return)
 
 ```
 
@@ -71,7 +76,7 @@ recovered <- recoveredRaw %>%
 covidData <- full_join(cases, deaths) %>% 
   full_join(recovered)
 
-### formating date
+### formatting date
 
 covidData$date <- covidData$date %>% 
   sub("X", "", .) %>% 
@@ -87,24 +92,38 @@ covidData <- covidData %>%
 
 worldCovid <- covidData %>% 
   group_by(date) %>% 
-  summarize(cases=sum(cases), cumCases=sum(cumCases), deaths=sum(deaths), recovered=sum(recovered)) %>% 
-  arrange(date)
+  summarize(worldCases=sum(cases), worldDeaths=sum(deaths), worldRecovered=sum(recovered))
 
 ### Data for the U.S.
 
-usCovid <- covidData %>% 
-  filter(Country.Region=="US") %>% 
-  arrange(date)
+usCovid <- covidData %>%
+  filter(Country.Region=="US") %>%
+  select(date, cases, deaths, recovered) %>% 
+  arrange(date) %>% 
+  rename(usCases = cases, usDeaths = deaths, usRecovered = recovered)
 
 ```
+
+### Putting covid-19 data and stock data together
+
+```{r}
+
+SP500_covid <- full_join(filter(S_P500, date >= '2020-01-01'), usCovid[,-1]) %>% 
+  full_join(worldCovid)
+  
+
+```
+
 
 ### Exporting data
 
 ```{r}
 
-write.csv(GSPC, file="S_P500.csv", quote=F)
+write.csv(S_P500, file="S_P500.csv", quote=F)
 
 write.csv(covidData, file="covid_19.csv", quote=F)
+
+write.csv(SP500_covid, file="SP500_covid19.csv", quote=F)
 
 ```
 
