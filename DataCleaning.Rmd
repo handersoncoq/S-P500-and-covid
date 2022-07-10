@@ -18,6 +18,16 @@ library(tidyr)
 
 ```
 
+
+### Get stock data
+
+```{r}
+
+getSymbols("^GSPC", src = "yahoo", from = Sys.Date()-(4*365), to = Sys.Date())
+
+
+```
+
 ### Calcluate daily returns
 
 ```{r adding returns}
@@ -27,11 +37,7 @@ GSPC$GSPC.Return = diff(GSPC$GSPC.Adjusted)/Lag(GSPC$GSPC.Adjusted)
 ```
 
 
-### Get stock data
-
 ```{r get data}
-
-getSymbols("^GSPC", src = "yahoo", from = Sys.Date()-(4*365), to = Sys.Date())
 
 ### Add the data in a dataframe with dates for export
 
@@ -90,9 +96,9 @@ covidData <- covidData %>%
 
 ### Data for the world
 
-worldCovid <- covidData %>% 
-  group_by(date) %>% 
-  summarize(worldCases=sum(cases), worldDeaths=sum(deaths), worldRecovered=sum(recovered))
+worldCovid <- covidData %>%
+  group_by(date) %>%
+  summarize(cases=sum(cases), cumCases=sum(cumCases), deaths=sum(deaths), recovered=sum(recovered))
 
 ### Data for the U.S.
 
@@ -102,6 +108,10 @@ usCovid <- covidData %>%
   arrange(date) %>% 
   rename(usCases = cases, usDeaths = deaths, usRecovered = recovered)
 
+### Add the change in case
+
+usCovid$change <- diff(usCovid$usCases)/Lag(usCovid$usCases)
+
 ```
 
 ### Putting covid-19 data and stock data together
@@ -110,7 +120,6 @@ usCovid <- covidData %>%
 
 SP500_covid <- full_join(filter(S_P500, date >= '2020-01-01'), usCovid[,-1]) %>% 
   full_join(worldCovid)
-  
 
 ```
 
